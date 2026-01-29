@@ -13,6 +13,8 @@ export const soneium = defineChain({
   blockExplorers: {
     default: { name: "Soneium Blockscout", url: "https://soneium.blockscout.com" },
   },
+  iconUrl: "/chains_logos/soneium_icon.svg",
+  iconBackground: "#05060a",
 });
 
 export const somnia = defineChain({
@@ -26,6 +28,8 @@ export const somnia = defineChain({
   blockExplorers: {
     default: { name: "Somnia Explorer", url: "https://explorer.somnia.network" },
   },
+  iconUrl: "/chains_logos/somnia_icon.svg",
+  iconBackground: "#05060a",
 });
 
 export const meageth = (() => {

@@ -48,7 +48,7 @@ export default function Home() {
     running: false,
     dead: false,
     position: "LONG",
-    leverage: LEVERAGES[1],
+    leverage: LEVERAGES[0],
     score: 0,
     elapsedMs: 0,
     message: null as { text: string; type: string } | null,
@@ -389,15 +389,71 @@ export default function Home() {
               CHECK-IN
             </button>
             <ConnectButton.Custom>
-              {({ openConnectModal, account, chain }) => (
-                <button
-                  className="glass-panel neon-border rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#2df7ff]"
-                  type="button"
-                  onClick={openConnectModal}
-                >
-                  {account && chain ? "WALLET CONNECTED" : "CONNECT WALLET"}
-                </button>
-              )}
+              {({
+                openConnectModal,
+                openAccountModal,
+                openChainModal,
+                account,
+                chain,
+              }) => {
+                if (!account || !chain) {
+                  return (
+                    <button
+                      className="glass-panel neon-border rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#2df7ff] hover:text-white cursor-pointer"
+                      type="button"
+                      onClick={openConnectModal}
+                    >
+                      CONNECT WALLET
+                    </button>
+                  );
+                }
+
+                return (
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="glass-panel neon-border flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#2df7ff] hover:text-white cursor-pointer"
+                      type="button"
+                      onClick={openChainModal}
+                    >
+                      {chain.iconUrl && (
+                        <span
+                          className="flex h-4 w-4 items-center justify-center overflow-hidden rounded-full"
+                          style={{ background: chain.iconBackground }}
+                        >
+                          <img
+                            alt={chain.name ?? "Chain"}
+                            src={chain.iconUrl}
+                            className="h-4 w-4"
+                          />
+                        </span>
+                      )}
+                      {chain.name}
+                    </button>
+                    <button
+                      className="glass-panel neon-border flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#2df7ff] hover:text-white cursor-pointer"
+                      type="button"
+                      onClick={openAccountModal}
+                      aria-label="Open wallet account"
+                    >
+                      <span className="h-3 w-3 rounded-full bg-[#43ff76] shadow-[0_0_10px_rgba(67,255,118,0.6)]" />
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4 text-[#2df7ff]"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3.5 7.5h15a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z" />
+                        <path d="M3.5 7.5V6a2 2 0 0 1 2-2h9.5" />
+                        <path d="M17 12h2.5" />
+                      </svg>
+                    </button>
+                  </div>
+                );
+              }}
             </ConnectButton.Custom>
           </div>
           <div className="flex flex-wrap items-center gap-6 text-xs uppercase tracking-[0.3em] text-zinc-400">
@@ -441,12 +497,6 @@ export default function Home() {
             <div>
               TIME: <span className="text-zinc-100">{elapsedSeconds}s</span>
             </div>
-          </div>
-
-          <div className="absolute right-4 top-4 z-10 text-right text-[10px] uppercase tracking-[0.4em] text-zinc-500">
-            <div>Swipe left/right: SHORT/LONG</div>
-            <div>Swipe up/down: leverage</div>
-            <div>Arrows: same</div>
           </div>
 
           {uiState.message && (
@@ -507,6 +557,11 @@ export default function Home() {
             )}
           </div>
         </section>
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-[10px] uppercase tracking-[0.35em] text-zinc-500">
+            <div>Swipe left/right: SHORT/LONG</div>
+            <div>Swipe up/down: leverage</div>
+            <div>Arrows: same</div>
+          </div>
       </div>
     </div>
   );
