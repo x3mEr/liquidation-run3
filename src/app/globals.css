@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --background: #05060a;
+  --foreground: #e6e8ff;
+  --neon-pink: #ff3bdb;
+  --neon-blue: #2df7ff;
+  --neon-green: #43ff76;
+  --neon-red: #ff4d4d;
+  --panel: #0b0e16;
+  --panel-border: #1b2030;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #05060a;
+    --foreground: #e6e8ff;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(45, 247, 255, 0.2);
+}
+
+.neon-text {
+  text-shadow: 0 0 12px rgba(45, 247, 255, 0.35);
+}
+
+.neon-border {
+  box-shadow:
+    0 0 0 1px rgba(45, 247, 255, 0.25),
+    0 0 18px rgba(45, 247, 255, 0.15);
+}
+
+.glass-panel {
+  background: linear-gradient(180deg, rgba(9, 12, 18, 0.95), rgba(7, 9, 15, 0.7));
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(6px);
+}
+
+.danger {
+  color: var(--neon-red);
+}
+
+.success {
+  color: var(--neon-green);
+}
