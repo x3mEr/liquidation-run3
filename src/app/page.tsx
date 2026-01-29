@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type PointerEvent,
+  type TouchEvent,
 } from "react";
 import {
   EGO_DEATH_MESSAGES,
@@ -293,18 +294,13 @@ export default function Home() {
     swipeStartRef.current = { x: event.clientX, y: event.clientY };
   };
 
-  const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+  const processSwipe = (dx: number, dy: number) => {
     const state = stateRef.current;
     if (!state || !state.running || state.dead) {
       startGame();
       return;
     }
 
-    const start = swipeStartRef.current;
-    swipeStartRef.current = null;
-    if (!start) return;
-    const dx = event.clientX - start.x;
-    const dy = event.clientY - start.y;
     const absX = Math.abs(dx);
     const absY = Math.abs(dy);
     if (Math.max(absX, absY) < 24) return;
@@ -321,6 +317,36 @@ export default function Home() {
         state.leverageIndex = Math.max(state.leverageIndex - 1, 0);
       }
     }
+  };
+
+  const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    const state = stateRef.current;
+    if (!state || !state.running || state.dead) {
+      startGame();
+      return;
+    }
+
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    processSwipe(dx, dy);
+  };
+
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+    swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start) return;
+    processSwipe(touch.clientX - start.x, touch.clientY - start.y);
   };
 
   const elapsedSeconds = Math.floor(uiState.elapsedMs / 1000);
@@ -456,22 +482,8 @@ export default function Home() {
               }}
             </ConnectButton.Custom>
           </div>
-          <div className="flex flex-wrap items-center gap-6 text-xs uppercase tracking-[0.3em] text-zinc-400">
-            <div>
-              CHECK-IN STREAK:{" "}
-              <span className="text-zinc-200">{checkInStreakDays}</span>
-            </div>
-            <div>
-              BEST:{" "}
-              <span className="text-zinc-200">
-                {bestTimeMs ? `${Math.floor(bestTimeMs / 1000)}s` : "—"}
-              </span>
-            </div>
-            {/* {!onchainEnabled && (
-              <div className="text-[10px] text-zinc-500">
-                On-chain disabled.
-              </div>
-            )} */}
+          <div className="text-[10px] uppercase tracking-[0.3em] text-zinc-500">
+            Each day adds 5 points to initial score
           </div>
         </header>
 
@@ -498,7 +510,24 @@ export default function Home() {
               TIME: <span className="text-zinc-100">{elapsedSeconds}s</span>
             </div>
           </div>
-
+          <div className="absolute right-4 top-4 z-10 text-right text-xs uppercase tracking-[0.4em] text-zinc-500">
+              <div>
+                STREAK:{" "}
+                <span className="text-zinc-200">{checkInStreakDays}</span>
+              </div>
+              <div>
+                BEST:{" "}
+                <span className="text-zinc-200">
+                  {bestTimeMs ? `${Math.floor(bestTimeMs / 1000)}s` : "—"}
+                </span>
+              </div>
+              {/* {!onchainEnabled && (
+                <div className="text-[10px] text-zinc-500">
+                  On-chain disabled.
+                </div>
+              )} */}
+            
+          </div>
           {uiState.message && (
             <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 text-center">
               <div className="mx-auto w-fit rounded-md bg-black/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#ff3bdb]">
@@ -509,9 +538,11 @@ export default function Home() {
 
           <div
             ref={containerRef}
-            className="relative h-[520px] w-full cursor-pointer select-none md:h-[620px]"
+            className="relative h-[520px] w-full cursor-pointer select-none touch-none md:h-[620px]"
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
             role="button"
             tabIndex={0}
           >
@@ -527,7 +558,9 @@ export default function Home() {
               </div>
             )}
             {uiState.dead && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/70 px-6 text-center">
+              <>
+                <div className="pointer-events-none absolute inset-0 z-10 death-flash" />
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/70 px-6 text-center">
                 <div className="text-xl font-semibold uppercase tracking-[0.35em] text-[#ff4d4d]">
                   Liquidated
                 </div>
@@ -553,11 +586,12 @@ export default function Home() {
                 <div className="text-[10px] uppercase tracking-[0.3em] text-zinc-500">
                   Tap to restart instantly.
                 </div>
-              </div>
+                </div>
+              </>
             )}
           </div>
         </section>
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-[10px] uppercase tracking-[0.35em] text-zinc-500">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 text-[10px] uppercase tracking-[0.35em] text-zinc-500">
             <div>Swipe left/right: SHORT/LONG</div>
             <div>Swipe up/down: leverage</div>
             <div>Arrows: same</div>

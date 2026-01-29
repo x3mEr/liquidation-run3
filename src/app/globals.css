@@ -62,3 +62,24 @@ body {
 .success {
   color: var(--neon-green);
 }
+
+.death-flash {
+  background: radial-gradient(
+    circle,
+    rgba(255, 77, 77, 0.55) 0%,
+    rgba(255, 77, 77, 0.1) 45%,
+    rgba(5, 6, 10, 0) 70%
+  );
+  animation: deathFlash 260ms ease-out forwards;
+}
+
+@keyframes deathFlash {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+}
