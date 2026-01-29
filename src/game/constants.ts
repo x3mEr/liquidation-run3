@@ -1,52 +1,58 @@
 export const LEVERAGES = [1, 2, 3, 4, 5] as const;
 
 export const SHORT_DEATH_MESSAGES = [
-  "Ликвидирован. Быстро.",
-  "Минус депозит.",
-  "Рынок был сильнее.",
-  "Слабые руки.",
+  "Total rekt.",
+  "Market > You.",
+  "Paper hands.",
+  "Master of buy high, sell low.",
 ] as const;
 
 export const TIME_DEATH_MESSAGES = [
-  "Даже не разогрелся.",
-  "Слаб.",
-  "Почти трейдер.",
-  "Уже что-то.",
+  "Didn't even warm up.",
+  "NGMI",
+  "Almost a trader.",
+  "Better than nothing.",
 ] as const;
 
 export const LEVERAGE_DEATH_MESSAGES = [
-  "Плечо 100x. Мозг 0x.",
-  "100x плечо? Гениально.",
-  "Меньше плечо — больше жизнь. Не сегодня.",
+  "100x leverage. 0x brain.",
+  "100x leverage? Genius.",
+  "Low leverage = long life. Not today.",
 ] as const;
 
 export const EGO_DEATH_MESSAGES = [
-  "Думал, успеешь?",
-  "Думал, контролируешь рынок?",
-  "Ещё один герой графиков.",
+  "Thought you'd make it?",
+  "Thought you controlled the market?",
+  "Another TA genius",
+  "Enjoy your bags, holder",
+  "Application to McDonald's submitted",
 ] as const;
 
 export const FOMO_MESSAGES = [
-  "ПОСЛЕДНИЙ ШАНС ПЕРЕД ПАМПОМ",
-  "УПУСТИШЬ — ЛОХ",
-  "РАКЕТА НА СТАРТЕ",
-  "ПРУЖИНА СЖИМАЕТСЯ",
-  "АЛЬТСЕЗОН БЛИЗКО",
+  "LAST CHANCE BEFORE THE PUMP",
+  "HAVE FUN STAYING POOR",
+  "ROCKET READY TO LAUNCH",
+  "COILING UP",
+  "ALTSEASON IS COMING",
 ] as const;
 
 export const NEWS_MESSAGES = [
-  "ПАУЭЛЛ СНОВА ОПАЗДЫВАЕТ",
-  "ГЭРИ ГЕНСЛЕР ВЕРНУЛСЯ",
-  "РЕГУЛЯТОР ПРОСНУЛСЯ",
-  "ТРАМП-АМ-ПАМ",
-  "ЧЁРНЫЙ ЛЕБЛЯДЬ",
+  "POWELL IS LATE AGAIN",
+  "GARY GENSLER IS BACK",
+  "SEC WOKE UP",
+  "TRUMP PUMP",
+  "BLACK SWAN",
+  "GOD CANDLE",
+  "FUNDS ARE SAFU",
 ] as const;
 
 export const INFLUENCER_MESSAGES = [
-  "БЕРУ ЛОНГ",
-  "ЭТО ЖЕ ЗОНА АККУМУЛЯЦИИ",
-  "НЕ ФИНСОВЕТ",
-  "ЦИКЛ УМЕР",
-  "ПРИСТЕГНУЛИ РЕМНИ",
-  "ДАЮТ ВОЗМОЖНОСТЬ УСРЕДНИТЬСЯ",
+  "IMMA LONG IT",
+  "ACCUMULATION ZONE",
+  "NFA",
+  "THE CYCLE IS DEAD",
+  "BUCKLE UP",
+  "WE ARE MOONING",
+  "CHANCE TO DCA",
+  "LAMBO SOON",
 ] as const;

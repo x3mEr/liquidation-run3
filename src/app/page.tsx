@@ -49,7 +49,7 @@ export default function Home() {
     running: false,
     dead: false,
     position: "LONG",
-    leverage: LEVERAGES[0],
+    leverage: LEVERAGES[1],
     score: 0,
     elapsedMs: 0,
     message: null as { text: string; type: string } | null,
@@ -165,7 +165,7 @@ export default function Home() {
     const timeIndex = Math.min(3, Math.floor(seconds / 15));
     const lines = [
       pickRandom(SHORT_DEATH_MESSAGES),
-      `Ликвидирован на ${seconds} секунде`,
+      `Liquidated on ${seconds} seconds`,
       TIME_DEATH_MESSAGES[timeIndex] ?? TIME_DEATH_MESSAGES[0],
     ];
     if (state.leverageIndex >= 3) {
@@ -482,13 +482,13 @@ export default function Home() {
               }}
             </ConnectButton.Custom>
           </div>
-          <div className="text-[10px] uppercase tracking-[0.3em] text-zinc-500">
+          <div className="text-[11px] text-center uppercase tracking-[0.3em] text-zinc-500">
             Each day adds 5 points to initial score
           </div>
         </header>
 
         <section className="glass-panel neon-border relative overflow-hidden rounded-xl">
-          <div className="absolute left-4 top-4 z-10 flex flex-col gap-2 text-xs uppercase tracking-[0.3em] text-zinc-400">
+          <div className="absolute left-4 top-4 z-10 flex flex-col gap-1 text-xs uppercase tracking-[0.3em] text-zinc-400">
             <div>
               POSITION:{" "}
               <span
@@ -510,7 +510,7 @@ export default function Home() {
               TIME: <span className="text-zinc-100">{elapsedSeconds}s</span>
             </div>
           </div>
-          <div className="absolute right-4 top-4 z-10 text-right text-xs uppercase tracking-[0.4em] text-zinc-500">
+          <div className="absolute right-4 top-4 z-10 flex flex-col gap-1 text-right text-xs uppercase tracking-[0.3em] text-zinc-400">
               <div>
                 STREAK:{" "}
                 <span className="text-zinc-200">{checkInStreakDays}</span>
@@ -530,7 +530,7 @@ export default function Home() {
           </div>
           {uiState.message && (
             <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 text-center">
-              <div className="mx-auto w-fit rounded-md bg-black/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#ff3bdb]">
+              <div className="mx-auto w-fit rounded-md bg-black/60 px-4 py-2 text-sm font-semibold uppercase tracking-[0.25em] text-[#ff3bdb]">
                 {uiState.message.text}
               </div>
             </div>
@@ -550,7 +550,7 @@ export default function Home() {
             {!uiState.running && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/60 text-center">
                 <div className="text-2xl font-semibold uppercase tracking-[0.3em] text-[#2df7ff]">
-                  Tap to Run
+                  Tap to get rekt
                 </div>
                 <div className="text-xs uppercase tracking-[0.3em] text-zinc-400">
                   Switch sides. Survive the liquidation wave.
@@ -583,8 +583,8 @@ export default function Home() {
                 >
                   {savingScore ? "SAVING..." : "SAVE SCORE ON-CHAIN"}
                 </button>
-                <div className="text-[10px] uppercase tracking-[0.3em] text-zinc-500">
-                  Tap to restart instantly.
+                <div className="py-4 text-[12px] uppercase tracking-[0.3em] text-zinc-400">
+                  Tap to get rekt again
                 </div>
                 </div>
               </>
@@ -592,9 +592,8 @@ export default function Home() {
           </div>
         </section>
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 text-[10px] uppercase tracking-[0.35em] text-zinc-500">
-            <div>Swipe left/right: SHORT/LONG</div>
-            <div>Swipe up/down: leverage</div>
-            <div>Arrows: same</div>
+            <div>left/right: SHORT/LONG</div>
+            <div>up/down: leverage</div>
           </div>
       </div>
     </div>

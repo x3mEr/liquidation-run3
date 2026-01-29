@@ -67,8 +67,9 @@ import {
       return state;
     }
   
-    const elapsedSeconds = state.elapsedMs / 1000;
-    const difficulty = clamp(elapsedSeconds / 40, 0, 1);
+  const elapsedSeconds = state.elapsedMs / 1000;
+  const difficulty = clamp(elapsedSeconds / 40, 0, 1);
+  const pace = 1 + difficulty * 1.4;
     const leverage = LEVERAGES[state.leverageIndex] ?? 1;
     const boostActive = nowMs < state.boostUntilMs;
     const noiseBoost = nowMs < state.noiseBoostUntilMs;
@@ -77,30 +78,33 @@ import {
     const leverageSpeed = leverage * 18;
     state.speed = baseSpeed + leverageSpeed + (boostActive ? 160 : 0);
   
-    state.nextTurnIn -= dt;
+  state.nextTurnIn -= dt * pace;
     if (state.nextTurnIn <= 0) {
       state.direction = state.direction === 1 ? -1 : 1;
       const minTurn = lerp(1.2, 0.45, difficulty);
       const maxTurn = lerp(2.0, 0.75, difficulty);
       state.nextTurnIn = randomRange(minTurn, maxTurn);
-      state.priceVelocity = state.direction * randomRange(0.08, 0.18);
+    state.priceVelocity =
+      state.direction * randomRange(0.08, 0.18) * (1 + difficulty * 0.7);
     }
   
     const targetVelocity =
       state.direction *
-      (0.08 + difficulty * 0.18) *
-      (1 + leverage * 0.11);
+    (0.08 + difficulty * 0.28) *
+    (1 + leverage * 0.11);
     const noise =
-      (0.16 + difficulty * 0.4 + leverage * 0.1 + (noiseBoost ? 0.5 : 0)) * dt;
+    (0.16 + difficulty * 0.6 + leverage * 0.1 + (noiseBoost ? 0.6 : 0)) * dt;
   
-    state.priceVelocity += (targetVelocity - state.priceVelocity) * 0.15;
+  state.priceVelocity += (targetVelocity - state.priceVelocity) * 0.2;
     state.price +=
-      state.priceVelocity * dt + (Math.random() - 0.5) * noise;
+    state.priceVelocity * dt * (1 + difficulty * 0.6) +
+    (Math.random() - 0.5) * noise;
   
     if (state.price <= PRICE_MIN || state.price >= PRICE_MAX) {
       state.price = clamp(state.price, PRICE_MIN, PRICE_MAX);
       state.direction = state.direction === 1 ? -1 : 1;
-      state.priceVelocity = state.direction * randomRange(0.09, 0.2);
+    state.priceVelocity =
+      state.direction * randomRange(0.09, 0.2) * (1 + difficulty * 0.6);
     }
   
     const deltaPrice = state.price - state.lastPrice;
@@ -138,18 +142,18 @@ import {
       state.timeLabelIndex = (state.timeLabelIndex + 1) % 48;
     }
   
-    state.nextEventIn -= dt;
+  state.nextEventIn -= dt * (1 + difficulty * 0.7);
     if (state.nextEventIn <= 0) {
       const eventType = pickEventType();
       const message = getEventMessage(eventType);
       state.message = {
         text: message,
         type: eventType,
-        untilMs: nowMs + 1400,
+        untilMs: nowMs + 2000,
       };
   
       if (eventType === "FOMO") {
-        state.boostUntilMs = nowMs + 2200;
+        state.boostUntilMs = nowMs + 3500;
       } else {
         state.direction = state.direction === 1 ? -1 : 1;
         state.priceVelocity = state.direction * randomRange(0.18, 0.3);
