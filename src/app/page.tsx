@@ -450,8 +450,11 @@ export default function Home() {
         await publicClient.waitForTransactionReceipt({ hash });
         await Promise.all([refetchStreak(), refetchCanCheckIn()]);
       }
-    } catch {
-      // user rejected or tx failed
+    } catch (err) {
+      // User rejected the request or tx failed — no need to surface
+      if (process.env.NODE_ENV === "development" && err instanceof Error) {
+        if (!err.message?.includes("rejected")) console.warn("Check-in:", err.message);
+      }
     }
   };
 
@@ -497,6 +500,11 @@ export default function Home() {
       if (hash && publicClient) {
         await publicClient.waitForTransactionReceipt({ hash });
         await refetchBest();
+      }
+    } catch (err) {
+      // User rejected the request or tx failed — no need to surface
+      if (process.env.NODE_ENV === "development" && err instanceof Error) {
+        if (!err.message?.includes("rejected")) console.warn("Save score:", err.message);
       }
     } finally {
       setSavingScore(false);
