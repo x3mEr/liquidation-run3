@@ -51,9 +51,9 @@ export const meageth = (() => {
 })();
 
 export const supportedChains = [
-  base,
-  soneium,
+  //base,
+  //soneium,
   somnia,
-  sepolia,
-  meageth,
+  //sepolia,
+  //meageth,
 ].filter(Boolean) as Chain[];
