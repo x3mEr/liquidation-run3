@@ -21,7 +21,13 @@ import { renderGame } from "@/game/render";
 import { pickRandom } from "@/game/utils";
 import type { CanvasSize, GameState } from "@/game/types";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount, useChainId, useReadContract, useWriteContract } from "wagmi";
+import {
+  useAccount,
+  useChainId,
+  usePublicClient,
+  useReadContract,
+  useWriteContract,
+} from "wagmi";
 import { liquidationRunAbi } from "@/web3/abi";
 import { getContractAddress } from "@/web3/contracts";
 
@@ -36,6 +42,7 @@ export default function Home() {
   const lastUiUpdateRef = useRef<number>(0);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const sessionRef = useRef<string | null>(null);
+  const deathCooldownUntilRef = useRef(0);
 
   const [uiState, setUiState] = useState<{
     running: boolean;
@@ -57,49 +64,73 @@ export default function Home() {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [savingScore, setSavingScore] = useState(false);
   const [deathLines, setDeathLines] = useState<string[]>([]);
+  const [prefetchedFinish, setPrefetchedFinish] = useState<{
+    timeMs: number;
+    signature: { v: number; r: `0x${string}`; s: `0x${string}` };
+  } | null>(null);
+  const [finishPrefetching, setFinishPrefetching] = useState(false);
+  const [finishPrefetchError, setFinishPrefetchError] = useState<string | null>(
+    null
+  );
+  const finishRequestedRef = useRef(false);
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const contractAddress = getContractAddress(chainId);
   const onchainEnabled = Boolean(contractAddress);
   const walletConnected = isConnected;
   const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
 
-  const { data: checkInStreakDaysRaw } = useReadContract({
+  const contractQueryOptions = {
+    refetchOnWindowFocus: false,
+    staleTime: 15 * 60_000,
+  };
+
+  const { data: checkInStreakDaysRaw, refetch: refetchStreak } = useReadContract({
     address: contractAddress,
     abi: liquidationRunAbi,
     functionName: "checkInStreakDays",
     args: address ? [address] : undefined,
-    query: { enabled: Boolean(address && contractAddress) },
+    query: {
+      enabled: Boolean(address && contractAddress),
+      ...contractQueryOptions,
+    },
   });
 
-  const { data: bestTimeMsRaw } = useReadContract({
+  const { data: bestTimeMsRaw, refetch: refetchBest } = useReadContract({
     address: contractAddress,
     abi: liquidationRunAbi,
     functionName: "bestTimeMs",
     args: address ? [address] : undefined,
-    query: { enabled: Boolean(address && contractAddress) },
+    query: {
+      enabled: Boolean(address && contractAddress),
+      ...contractQueryOptions,
+    },
   });
 
-  const { data: canCheckIn } = useReadContract({
+  const { data: canCheckIn, refetch: refetchCanCheckIn } = useReadContract({
     address: contractAddress,
     abi: liquidationRunAbi,
     functionName: "canCheckIn",
     args: address ? [address] : undefined,
-    query: { enabled: Boolean(address && contractAddress) },
+    query: {
+      enabled: Boolean(address && contractAddress),
+      ...contractQueryOptions,
+    },
   });
 
   const { data: checkInPrice } = useReadContract({
     address: contractAddress,
     abi: liquidationRunAbi,
     functionName: "checkInPrice",
-    query: { enabled: Boolean(contractAddress) },
+    query: { enabled: Boolean(contractAddress), ...contractQueryOptions },
   });
 
   const { data: submitScorePrice } = useReadContract({
     address: contractAddress,
     abi: liquidationRunAbi,
     functionName: "submitScorePrice",
-    query: { enabled: Boolean(contractAddress) },
+    query: { enabled: Boolean(contractAddress), ...contractQueryOptions },
   });
 
   const checkInStreakDays = Number(checkInStreakDaysRaw ?? 0);
@@ -156,17 +187,21 @@ export default function Home() {
     nextState.message = null;
     stateRef.current = nextState;
     setDeathLines([]);
+    setPrefetchedFinish(null);
+    setFinishPrefetchError(null);
+    setFinishPrefetching(false);
+    finishRequestedRef.current = false;
     updateUi(nextState);
     void startSession();
   }, [checkInStreakDays, startSession, updateUi]);
 
   const handleDeath = useCallback((state: GameState) => {
-    const seconds = Math.round(state.elapsedMs / 1000);
+    deathCooldownUntilRef.current = Date.now() + 2000;
+    const seconds = Math.floor(state.elapsedMs / 1000);
     const timeIndex = Math.min(3, Math.floor(seconds / 15));
     const lines = [
       pickRandom(SHORT_DEATH_MESSAGES),
-      `Liquidated on ${seconds} seconds`,
-      TIME_DEATH_MESSAGES[timeIndex] ?? TIME_DEATH_MESSAGES[0],
+      `${seconds} seconds: ${TIME_DEATH_MESSAGES[timeIndex] ?? TIME_DEATH_MESSAGES[0]}`,
     ];
     if (state.leverageIndex >= 3) {
       lines.push(pickRandom(LEVERAGE_DEATH_MESSAGES));
@@ -290,6 +325,44 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [setToken, uiState.dead, uiState.running]);
 
+  useEffect(() => {
+    if (!uiState.dead) return;
+    if (!sessionToken || !address || !chainId) return;
+    if (finishRequestedRef.current) return;
+    finishRequestedRef.current = true;
+    setFinishPrefetching(true);
+    setFinishPrefetchError(null);
+
+    const run = async () => {
+      try {
+        const response = await fetch("/api/game/finish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: sessionToken, player: address, chainId }),
+        });
+        if (!response.ok) {
+          setFinishPrefetchError("finish_failed");
+          return;
+        }
+        const data = (await response.json()) as {
+          timeMs?: number;
+          signature?: { v: number; r: `0x${string}`; s: `0x${string}` };
+        };
+        if (data.signature && data.timeMs) {
+          setPrefetchedFinish({ timeMs: data.timeMs, signature: data.signature });
+        } else {
+          setFinishPrefetchError("finish_invalid");
+        }
+      } catch {
+        setFinishPrefetchError("finish_exception");
+      } finally {
+        setFinishPrefetching(false);
+      }
+    };
+
+    void run();
+  }, [address, chainId, sessionToken, uiState.dead]);
+
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     swipeStartRef.current = { x: event.clientX, y: event.clientY };
   };
@@ -297,6 +370,7 @@ export default function Home() {
   const processSwipe = (dx: number, dy: number) => {
     const state = stateRef.current;
     if (!state || !state.running || state.dead) {
+      if (Date.now() < deathCooldownUntilRef.current) return;
       startGame();
       return;
     }
@@ -322,6 +396,9 @@ export default function Home() {
   const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
     const state = stateRef.current;
     if (!state || !state.running || state.dead) {
+      if (event.defaultPrevented) return;
+      if ((event.target as Element).closest?.("[data-no-restart]")) return;
+      if (Date.now() < deathCooldownUntilRef.current) return;
       startGame();
       return;
     }
@@ -343,6 +420,15 @@ export default function Home() {
   const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
     const touch = event.changedTouches[0];
     if (!touch) return;
+    const state = stateRef.current;
+    if (!state || !state.running || state.dead) {
+      if (event.defaultPrevented) return;
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (target?.closest?.("[data-no-restart]")) return;
+      if (Date.now() < deathCooldownUntilRef.current) return;
+      startGame();
+      return;
+    }
     const start = swipeStartRef.current;
     swipeStartRef.current = null;
     if (!start) return;
@@ -353,46 +439,65 @@ export default function Home() {
 
   const handleCheckIn = async () => {
     if (!contractAddress || !walletConnected || !checkInPrice) return;
-    await writeContractAsync({
-      address: contractAddress,
-      abi: liquidationRunAbi,
-      functionName: "checkIn",
-      value: checkInPrice,
-    });
+    try {
+      const hash = await writeContractAsync({
+        address: contractAddress,
+        abi: liquidationRunAbi,
+        functionName: "checkIn",
+        value: checkInPrice,
+      });
+      if (hash && publicClient) {
+        await publicClient.waitForTransactionReceipt({ hash });
+        await Promise.all([refetchStreak(), refetchCanCheckIn()]);
+      }
+    } catch {
+      // user rejected or tx failed
+    }
   };
 
   const handleSaveScore = async () => {
     if (!contractAddress || !walletConnected || !submitScorePrice) return;
-    const token = sessionRef.current;
-    if (!token) return;
     setSavingScore(true);
     try {
-      const response = await fetch("/api/game/finish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, player: address, chainId }),
-      });
-      if (!response.ok) {
-        setSavingScore(false);
-        return;
-      }
-      const data = (await response.json()) as {
-        timeMs?: number;
-        signature?: { v: number; r: `0x${string}`; s: `0x${string}` };
-      };
+      let finishData = prefetchedFinish;
+      if (!finishData) {
+        const token = sessionRef.current;
+        if (!token) return;
+        const response = await fetch("/api/game/finish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, player: address, chainId }),
+        });
+        if (!response.ok) {
+          return;
+        }
+        const data = (await response.json()) as {
+          timeMs?: number;
+          signature?: { v: number; r: `0x${string}`; s: `0x${string}` };
+        };
 
-      if (!data.signature || !data.timeMs) {
-        setSavingScore(false);
-        return;
+        if (!data.signature || !data.timeMs) {
+          return;
+        }
+        finishData = { timeMs: data.timeMs, signature: data.signature };
       }
 
-      await writeContractAsync({
+      const hash = await writeContractAsync({
         address: contractAddress,
         abi: liquidationRunAbi,
         functionName: "submitScore",
-        args: [data.timeMs, data.signature.v, data.signature.r, data.signature.s],
+        args: [
+          finishData.timeMs,
+          finishData.signature.v,
+          finishData.signature.r,
+          finishData.signature.s,
+        ],
         value: submitScorePrice,
       });
+      if (hash && publicClient) {
+        await publicClient.waitForTransactionReceipt({ hash });
+        await refetchBest();
+      }
     } finally {
       setSavingScore(false);
     }
@@ -407,12 +512,12 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button
-              className="glass-panel neon-border rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#43ff76] disabled:opacity-40"
+              className="glass-panel neon-border rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#43ff76] disabled:opacity-80"
               disabled={!walletConnected || !onchainEnabled || canCheckIn === false}
               type="button"
               onClick={handleCheckIn}
             >
-              CHECK-IN
+              {canCheckIn === false ? "CHECKED-IN" : "CHECK-IN"}
             </button>
             <ConnectButton.Custom>
               {({
@@ -560,7 +665,9 @@ export default function Home() {
             {uiState.dead && (
               <>
                 <div className="pointer-events-none absolute inset-0 z-10 death-flash" />
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/70 px-6 text-center">
+                <div
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/70 px-6 text-center"
+                >
                 <div className="text-xl font-semibold uppercase tracking-[0.35em] text-[#ff4d4d]">
                   Liquidated
                 </div>
@@ -569,17 +676,32 @@ export default function Home() {
                     <span key={line}>{line}</span>
                   ))}
                 </div>
+                {/* {(() => {
+                  // Log these values only when the component renders this part (e.g. when dead UI shows).
+                  console.log("walletConnected:", walletConnected,
+                              "onchainEnabled:", onchainEnabled,
+                              "submitScorePrice:", submitScorePrice,
+                              "sessionToken:", sessionToken,
+                              "savingScore:", !savingScore);
+                  return null;
+                })()} */}
                 <button
-                  className="mt-4 rounded-md border border-[#2df7ff] px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#2df7ff] disabled:opacity-40"
+                  className="mt-4 rounded-md border border-[#2df7ff] px-4 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-[#2df7ff] disabled:opacity-40"
                   disabled={
                     !walletConnected ||
                     !onchainEnabled ||
                     !submitScorePrice ||
-                    !sessionToken ||
-                    savingScore
+                    (!sessionToken && !prefetchedFinish) ||
+                    savingScore ||
+                    finishPrefetching
                   }
                   type="button"
                   onClick={handleSaveScore}
+                  data-no-restart
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onPointerUp={(event) => event.stopPropagation()}
+                  onTouchStart={(event) => event.stopPropagation()}
+                  onTouchEnd={(event) => event.stopPropagation()}
                 >
                   {savingScore ? "SAVING..." : "SAVE SCORE ON-CHAIN"}
                 </button>

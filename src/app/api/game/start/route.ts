@@ -4,7 +4,12 @@ import { createSessionToken } from "@/server/session";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    let body: Record<string, unknown> = {};
+    try {
+      body = (await request.json()) as Record<string, unknown>;
+    } catch {
+      body = {};
+    }
     const player =
       typeof body?.player === "string" ? body.player.toLowerCase() : undefined;
     const chainId = Number(body?.chainId);

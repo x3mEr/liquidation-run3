@@ -12,7 +12,7 @@ import { getContractAddress } from "@/web3/contracts";
 import { getChainById } from "@/server/chain";
 import { verifySessionToken } from "@/server/session";
 
-const MAX_IDLE_MS = 6000;
+const MAX_IDLE_MS = 30000;
 const MAX_TIME_MS = 10 * 60 * 1000;
 
 export async function POST(request: Request) {
