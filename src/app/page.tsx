@@ -513,7 +513,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#05060a] text-zinc-100">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 pb-12 pt-6 md:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 pb-12 pt-4 md:px-8">
         <header className="flex flex-col gap-3">
           <div className="text-2xl font-semibold uppercase tracking-[0.3em] text-[#2df7ff] neon-text">
             LIQUIDATION RUN
@@ -721,7 +721,7 @@ export default function Home() {
             )}
           </div>
         </section>
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 text-[10px] uppercase tracking-[0.35em] text-zinc-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 text-[10px] uppercase tracking-[0.35em] text-zinc-500">
             <div>left/right: SHORT/LONG</div>
             <div>up/down: leverage</div>
           </div>
