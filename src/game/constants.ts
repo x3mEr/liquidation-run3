@@ -34,6 +34,7 @@ export const FOMO_MESSAGES = [
   "ROCKET READY TO LAUNCH",
   "COILING UP",
   "ALTSEASON IS COMING",
+  "ACCUMULATION ZONE",
 ] as const;
 
 export const NEWS_MESSAGES = [
@@ -42,13 +43,12 @@ export const NEWS_MESSAGES = [
   "SEC WOKE UP",
   "TRUMP PUMP",
   "BLACK SWAN",
-  "GOD CANDLE",
+  //"GOD CANDLE",
   "FUNDS ARE SAFU",
 ] as const;
 
 export const INFLUENCER_MESSAGES = [
   "IMMA LONG IT",
-  "ACCUMULATION ZONE",
   "NFA",
   "THE CYCLE IS DEAD",
   "BUCKLE UP",

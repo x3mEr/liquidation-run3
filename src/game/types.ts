@@ -12,6 +12,12 @@ export type GameMessage = {
   untilMs: number;
 };
 
+export type TimelineEvent = {
+  type: EventType;
+  x: number;
+  triggered: boolean;
+};
+
 export type GameState = {
   running: boolean;
   dead: boolean;
@@ -32,6 +38,7 @@ export type GameState = {
   noiseBoostUntilMs: number;
   message: GameMessage | null;
   points: PricePoint[];
+  events: TimelineEvent[];
   lastPrice: number;
   bonusPoints: number;
 };

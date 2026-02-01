@@ -643,7 +643,7 @@ export default function Home() {
           </div>
           {uiState.message && (
             <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 text-center">
-              <div className="mx-auto w-fit rounded-md bg-black/60 px-4 py-2 text-sm font-semibold uppercase tracking-[0.25em] text-[#ff3bdb]">
+              <div className="mx-auto w-fit rounded-md bg-black/60 px-4 py-2 text-md font-semibold uppercase tracking-[0.25em] text-[#ff3bdb] text-opacity-90">
                 {uiState.message.text}
               </div>
             </div>
@@ -674,12 +674,12 @@ export default function Home() {
               <>
                 <div className="pointer-events-none absolute inset-0 z-10 death-flash" />
                 <div
-                  className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/70 px-6 text-center"
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/85 px-6 text-center"
                 >
                 <div className="text-xl font-semibold uppercase tracking-[0.35em] text-[#ff4d4d]">
                   Liquidated
                 </div>
-                <div className="flex flex-col gap-1 text-sm uppercase tracking-[0.2em] text-zinc-300">
+                <div className="flex flex-col gap-3 text-sm uppercase tracking-[0.2em] text-zinc-300">
                   {deathLines.map((line) => (
                     <span key={line}>{line}</span>
                   ))}
@@ -713,7 +713,7 @@ export default function Home() {
                 >
                   {savingScore ? "SAVING..." : "SAVE SCORE ON-CHAIN"}
                 </button>
-                <div className="py-4 text-[12px] uppercase tracking-[0.3em] text-zinc-400">
+                <div className="py-3 text-[12px] uppercase tracking-[0.3em] text-zinc-400">
                   Tap to get rekt again
                 </div>
                 </div>
