@@ -523,7 +523,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setInfoOpen(true)}
-              className="flex shrink-0 items-center justify-center text-[#2df7ff] transition hover:bg-[#2df7ff]/10"
+              className="flex shrink-0 items-center justify-center text-[#2df7ff] transition"
               aria-label="Game info"
             >
               <svg
