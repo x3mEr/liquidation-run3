@@ -87,10 +87,10 @@ export default function Home() {
     staleTime: 15 * 60_000,
   };
 
-  const { data: checkInStreakDaysRaw, refetch: refetchStreak } = useReadContract({
+  const { data: currentStreakRaw, refetch: refetchStreak } = useReadContract({
     address: contractAddress,
     abi: liquidationRunAbi,
-    functionName: "checkInStreakDays",
+    functionName: "getCurrentStreak",
     args: address ? [address] : undefined,
     query: {
       enabled: Boolean(address && contractAddress),
@@ -134,7 +134,7 @@ export default function Home() {
     query: { enabled: Boolean(contractAddress), ...contractQueryOptions },
   });
 
-  const checkInStreakDays = Number(checkInStreakDaysRaw ?? 0);
+  const checkInStreakDays = Number(currentStreakRaw ?? 0);
   const bestTimeMs = Number(bestTimeMsRaw ?? 0);
 
   const updateUi = useCallback((state: GameState) => {

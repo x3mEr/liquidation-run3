@@ -1,9 +1,3 @@
-// 1000000000000000000 = 1
-// 200000000000000000 = 0.2
-// 0x7e30ba7ad542bBd64dDC8B9D16Db4570D6014F5B - collector
-// 0x3Da141be2f847D8dfEe497e54BB2d922674b59E4, 0x8265305cD15e7DdE264587c7E2A2c6a65D2F1EE9, 1000000000000, 1000000000000 //0.000001 ETH
-// 0x3Da141be2f847D8dfEe497e54BB2d922674b59E4, 0x7e30ba7ad542bBd64dDC8B9D16Db4570D6014F5B, 200000000000000000, 1000000000000000000
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
@@ -51,6 +45,11 @@ contract LiquidationRunOnchain is Ownable, Pausable, ReentrancyGuard {
         bool isNewBest,
         uint256 paid
     );
+    event ScoreSubmittedByOwner(
+        address indexed player,
+        uint32 timeMs,
+        bool isNewBest
+    );
     event SignerUpdated(address indexed oldSigner, address indexed newSigner);
     event PricesUpdated(uint256 checkInPrice, uint256 submitScorePrice);
     event checkInPriceUpdated(uint256 oldCheckInPrice, uint256 newCheckInPrice);
@@ -84,6 +83,15 @@ contract LiquidationRunOnchain is Ownable, Pausable, ReentrancyGuard {
     /// @notice Can check-in today
     function canCheckIn(address _player) external view returns (bool) {
         return lastCheckInDay[_player] != today();
+    }
+
+    /// @notice Get current streak
+    /// @param _player Player address (uint32)
+    function getCurrentStreak(address _player) external view returns (uint32) {
+        if (lastCheckInDay[_player] < today() - 1)
+          return 0;
+
+        return checkInStreakDays[_player];
     }
 
     /// @notice Everyday check-in (once a day)
@@ -183,6 +191,23 @@ contract LiquidationRunOnchain is Ownable, Pausable, ReentrancyGuard {
         address oldCollector = collector;
         collector = _newCollector;
         emit CollectorUpdated(oldCollector, _newCollector);
+    }
+
+    /// @notice Save result by owner.
+    /// @param _player Player addres (address)
+    /// @param _timeMs Player time in ms (uint32)
+    function submitScoreOwner(
+        address _player,
+        uint32 _timeMs
+    ) external payable onlyOwner nonReentrant {
+        if (_timeMs == 0) revert ZeroScore();
+
+        uint32 prev = bestTimeMs[_player];
+        bool isNewBest = _timeMs > prev;
+        if (isNewBest)
+            bestTimeMs[_player] = _timeMs;
+
+        emit ScoreSubmittedByOwner(_player, _timeMs, isNewBest);
     }
 
     /// @notice Withdraw native tokens
