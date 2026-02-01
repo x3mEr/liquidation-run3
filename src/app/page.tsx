@@ -74,6 +74,7 @@ export default function Home() {
     null
   );
   const finishRequestedRef = useRef(false);
+  const saveScoreTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const contractAddress = getContractAddress(chainId);
@@ -461,7 +462,16 @@ export default function Home() {
 
   const handleSaveScore = async () => {
     if (!contractAddress || !walletConnected || !submitScorePrice) return;
+    if (saveScoreTimeoutRef.current) {
+      clearTimeout(saveScoreTimeoutRef.current);
+      saveScoreTimeoutRef.current = null;
+    }
     setSavingScore(true);
+    const SAFE_TIMEOUT_MS = 90_000;
+    saveScoreTimeoutRef.current = setTimeout(() => {
+      saveScoreTimeoutRef.current = null;
+      setSavingScore(false);
+    }, SAFE_TIMEOUT_MS);
     try {
       let finishData = prefetchedFinish;
       if (!finishData) {
@@ -508,6 +518,10 @@ export default function Home() {
         if (!err.message?.includes("rejected")) console.warn("Save score:", err.message);
       }
     } finally {
+      if (saveScoreTimeoutRef.current) {
+        clearTimeout(saveScoreTimeoutRef.current);
+        saveScoreTimeoutRef.current = null;
+      }
       setSavingScore(false);
     }
   };
