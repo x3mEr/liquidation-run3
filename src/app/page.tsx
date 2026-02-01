@@ -64,6 +64,7 @@ export default function Home() {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [savingScore, setSavingScore] = useState(false);
   const [deathLines, setDeathLines] = useState<string[]>([]);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [prefetchedFinish, setPrefetchedFinish] = useState<{
     timeMs: number;
     signature: { v: number; r: `0x${string}`; s: `0x${string}` };
@@ -515,8 +516,30 @@ export default function Home() {
     <div className="min-h-screen bg-[#05060a] text-zinc-100">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 pb-12 pt-4 md:px-8">
         <header className="flex flex-col gap-3">
-          <div className="text-2xl font-semibold uppercase tracking-[0.3em] text-[#2df7ff] neon-text">
-            LIQUIDATION RUN
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold uppercase tracking-[0.3em] text-[#2df7ff] neon-text">
+              LIQUIDATION RUN
+            </h1>
+            <button
+              type="button"
+              onClick={() => setInfoOpen(true)}
+              className="flex shrink-0 items-center justify-center text-[#2df7ff] transition hover:bg-[#2df7ff]/10"
+              aria-label="Game info"
+            >
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4M12 8h.01" />
+              </svg>
+            </button>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button
@@ -596,9 +619,75 @@ export default function Home() {
             </ConnectButton.Custom>
           </div>
           <div className="text-[11px] text-center uppercase tracking-[0.3em] text-zinc-500">
-            Each day adds 5 points to initial score
+            Each day adds points to initial score
           </div>
         </header>
+
+        {infoOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="info-title"
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              onClick={() => setInfoOpen(false)}
+              aria-label="Close"
+            />
+            <div className="glass-panel neon-border relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl p-6 text-left shadow-xl">
+              <button
+                type="button"
+                onClick={() => setInfoOpen(false)}
+                className="absolute right-3 top-3 rounded p-1 text-zinc-400 transition hover:bg-white/10 hover:text-zinc-100"
+                aria-label="Close"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <h2 id="info-title" className="mb-4 text-xl font-semibold uppercase tracking-wider text-[#2df7ff]">
+                LIQUIDATION RUN
+              </h2>
+              <p className="mb-4 text-sm leading-relaxed text-zinc-300">
+                Arcade runner: you are a crypto-trader, the price graph runs from right to left. Change your position (long/short) and leverage in sync with the price movement. Points increase when the direction matches your position; decrease when it doesn't. Zero points = liquidation.
+              </p>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Controls
+              </h3>
+              <ul className="mb-4 list-inside list-disc space-y-1 text-sm text-zinc-300">
+                <li>Swipe left / right — SHORT / LONG</li>
+                <li>Swipe up / down — increase / decrease leverage (1x-5x)</li>
+                <li>Arrow keys — same as above</li>
+                <li>Tap on the screen after death — restart</li>
+              </ul>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Objects on the time line
+              </h3>
+              <ul className="mb-4 space-y-3 text-sm text-zinc-300">
+                <li>
+                  <span className="font-semibold text-[#43ff76]">FOMO</span> — temporarily speeds up the game (more risk, more points).
+                </li>
+                <li>
+                  <span className="font-semibold text-[#ff4d4d]">NEWS</span> — quickly changes direction and adds noise; you need to quickly flip your position.
+                </li>
+                <li>
+                  <span className="font-semibold text-[#2df7ff]">INFLUENCER</span> — same as NEWS: quick direction change and noise; catch the moment.
+                </li>
+              </ul>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                On-chain
+              </h3>
+              <p className="mb-4 text-sm leading-relaxed text-zinc-300">
+                <span className="font-semibold text-[#43ff76]">Daily check-in</span> — builds a streak: each consecutive day adds +5 to your starting score (up to +100). More streak = more cushion at the start of each run.
+              </p>
+              <p className="mb-4 text-sm leading-relaxed text-zinc-300">
+                <span className="font-semibold text-[#2df7ff]">Save score on-chain</span> — after a run, you can save your survival time. Your best time is stored on-chain and shown in the header; you compete for the longest run.
+              </p>
+            </div>
+          </div>
+        )}
 
         <section className="glass-panel neon-border relative overflow-hidden rounded-xl">
           <div className="absolute left-4 top-4 z-10 flex flex-col gap-1 text-xs uppercase tracking-[0.3em] text-zinc-400">
