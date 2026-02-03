@@ -39,14 +39,58 @@ body {
   background: rgba(45, 247, 255, 0.2);
 }
 
-.neon-text {
+.neon-text-pink {
+  text-shadow: 0 0 12px rgba(255, 59, 219, 0.35);
+}
+
+.neon-text-red {
+  text-shadow: 0 0 12px rgba(255, 77, 77, 0.35);
+}
+
+.neon-text-green {
+  text-shadow: 0 0 12px rgba(67, 255, 118, 0.35);
+}
+
+.neon-text-blue {
   text-shadow: 0 0 12px rgba(45, 247, 255, 0.35);
 }
 
 .neon-border {
   box-shadow:
-    0 0 0 1px rgba(45, 247, 255, 0.25),
-    0 0 18px rgba(45, 247, 255, 0.15);
+    0 0 0 1px rgba(45, 247, 255, 0.4),
+    0 0 18px rgba(45, 247, 255, 0.35);
+}
+
+.neon-glow-pink {
+  text-shadow: 0 0 10px var(--neon-pink), 0 0 20px rgb(255, 59, 219, 0.4);
+  box-shadow:
+    0 0 0 1px rgba(255, 59, 219, 0.5),
+    0 0 16px rgba(255, 59, 219, 0.4),
+    0 0 32px rgba(255, 59, 219, 0.25);
+}
+
+.neon-glow-red {
+  text-shadow: 0 0 10px var(--neon-red), 0 0 20px rgba(255, 77, 77, 0.25);
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 77, 0.5),
+    0 0 16px rgba(255, 77, 77, 0.4),
+    0 0 32px rgba(255, 77, 77, 0.25);
+}
+
+.neon-glow-green {
+  text-shadow: 0 0 10px var(--neon-green), 0 0 20px rgba(67, 255, 118, 0.25);
+  box-shadow:
+    0 0 0 1px rgba(67, 255, 118, 0.5),
+    0 0 16px rgba(67, 255, 118, 0.4),
+    0 0 32px rgba(67, 255, 118, 0.25);
+}
+
+.neon-glow-blue {
+  text-shadow: 0 0 10px var(--neon-blue), 0 0 20px rgba(45, 247, 255, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(45, 247, 255, 0.4),
+    0 0 14px rgba(45, 247, 255, 0.3),
+    0 0 28px rgba(45, 247, 255, 0.2);
 }
 
 .glass-panel {

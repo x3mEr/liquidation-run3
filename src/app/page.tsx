@@ -467,7 +467,7 @@ export default function Home() {
       saveScoreTimeoutRef.current = null;
     }
     setSavingScore(true);
-    const SAFE_TIMEOUT_MS = 90_000;
+    const SAFE_TIMEOUT_MS = 30_000;
     saveScoreTimeoutRef.current = setTimeout(() => {
       saveScoreTimeoutRef.current = null;
       setSavingScore(false);
@@ -531,7 +531,7 @@ export default function Home() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 pb-12 pt-4 md:px-8">
         <header className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold uppercase tracking-[0.3em] text-[#2df7ff] neon-text">
+            <h1 className="text-2xl font-semibold uppercase tracking-[0.3em] text-[#2df7ff] neon-text-blue">
               LIQUIDATION RUN
             </h1>
             <button
@@ -557,7 +557,7 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button
-              className="glass-panel neon-border rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#43ff76] disabled:opacity-80"
+              className="glass-panel neon-glow-pink rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#ff3bdb] disabled:opacity-70"
               disabled={!walletConnected || !onchainEnabled || canCheckIn === false}
               type="button"
               onClick={handleCheckIn}
@@ -632,7 +632,7 @@ export default function Home() {
               }}
             </ConnectButton.Custom>
           </div>
-          <div className="text-[11px] text-center uppercase tracking-[0.3em] text-zinc-500">
+          <div className="text-[11px] text-center uppercase tracking-[0.2em] text-zinc-500">
             Each day adds points to initial score
           </div>
         </header>
@@ -684,7 +684,7 @@ export default function Home() {
                   <span className="font-semibold text-[#43ff76]">FOMO</span> — temporarily speeds up the game (more risk, more points).
                 </li>
                 <li>
-                  <span className="font-semibold text-[#ff4d4d]">NEWS</span> — quickly changes direction and adds noise; you need to quickly flip your position.
+                  <span className="font-semibold text-[#ff4d4d]">NEWS</span> — quickly changes direction and adds volatility; you need to quickly flip your position.
                 </li>
                 <li>
                   <span className="font-semibold text-[#2df7ff]">INFLUENCER</span> — same as NEWS: quick direction change and noise; catch the moment.
@@ -824,10 +824,65 @@ export default function Home() {
             )}
           </div>
         </section>
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 text-[10px] uppercase tracking-[0.35em] text-zinc-500">
+        {/*<div className="flex flex-wrap items-center justify-between gap-2 px-4 text-[10px] uppercase tracking-[0.35em] text-zinc-500">
             <div>left/right: SHORT/LONG</div>
             <div>up/down: leverage</div>
-          </div>
+        </div>*/}
+        <div className="flex flex-wrap items-center justify-center gap-3 px-4">
+        <button
+            type="button"
+            onClick={() => {
+              const state = stateRef.current;
+              if (!state || !state.running || state.dead) return;
+              state.leverageIndex = Math.max(state.leverageIndex - 1, 0);
+              updateUi(state);
+            }}
+            className="neon-glow-blue flex h-9 w-9 items-center justify-center rounded-md border border-[#2df7ff]/60 bg-zinc-800/80 text-[#2df7ff] transition hover:bg-zinc-700/80"
+            aria-label="Decrease leverage"
+          >
+            -
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const state = stateRef.current;
+              if (!state || !state.running || state.dead) return;
+              state.position = "SHORT";
+              updateUi(state);
+            }}
+            className="neon-glow-pink min-w-[72px] rounded-md border border-[#ff3bdb] bg-zinc-800/80 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[#ff3bdb] transition hover:bg-zinc-700/80"
+          >
+            SHORT
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const state = stateRef.current;
+              if (!state || !state.running || state.dead) return;
+              state.position = "LONG";
+              updateUi(state);
+            }}
+            className="neon-glow-green min-w-[72px] rounded-md border border-[#43ff76] bg-zinc-800/80 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[#43ff76] transition hover:bg-zinc-700/80"
+          >
+            LONG
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const state = stateRef.current;
+              if (!state || !state.running || state.dead) return;
+              state.leverageIndex = Math.min(
+                state.leverageIndex + 1,
+                LEVERAGES.length - 1
+              );
+              updateUi(state);
+            }}
+            className="neon-glow-blue flex h-9 w-9 items-center justify-center rounded-md border border-[#2df7ff]/60 bg-zinc-800/80 text-[#2df7ff] transition hover:bg-zinc-700/80"
+            aria-label="Increase leverage"
+          >
+            +
+          </button>
+        </div>
       </div>
     </div>
   );
