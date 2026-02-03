@@ -528,7 +528,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#05060a] text-zinc-100">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 pb-12 pt-4 md:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 pb-4 pt-3 md:px-8">
         <header className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold uppercase tracking-[0.3em] text-[#2df7ff] neon-text-blue">
@@ -537,7 +537,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setInfoOpen(true)}
-              className="flex shrink-0 items-center justify-center text-[#2df7ff] transition"
+              className="flex shrink-0 items-center justify-center text-[#2df7ff]"
               aria-label="Game info"
             >
               <svg
@@ -687,7 +687,7 @@ export default function Home() {
                   <span className="font-semibold text-[#ff4d4d]">NEWS</span> — quickly changes direction and adds volatility; you need to quickly flip your position.
                 </li>
                 <li>
-                  <span className="font-semibold text-[#2df7ff]">INFLUENCER</span> — same as NEWS: quick direction change and noise; catch the moment.
+                  <span className="font-semibold text-[#2df7ff]">INFLUENCER</span> — empty talk.
                 </li>
               </ul>
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">

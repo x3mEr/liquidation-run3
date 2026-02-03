@@ -172,10 +172,12 @@ export const updateGame = (
     };
     if (nextEvent.type === "FOMO") {
       state.boostUntilMs = nowMs + 3500;
-    } else {
+    } else if (nextEvent.type === "NEWS") {
       state.direction = state.direction === 1 ? -1 : 1;
       state.priceVelocity = state.direction * randomRange(0.18, 0.3);
       state.noiseBoostUntilMs = nowMs + 1600;
+    } else if (nextEvent.type === "INFLUENCER") {
+      // influencer does nothing
     }
     nextEvent.triggered = true;
   }

@@ -62,7 +62,7 @@ body {
 }
 
 .neon-glow-pink {
-  text-shadow: 0 0 10px var(--neon-pink), 0 0 20px rgb(255, 59, 219, 0.4);
+  text-shadow: 0 0 10px var(--neon-pink), 0 0 20px rgba(255, 59, 219, 0.4);
   box-shadow:
     0 0 0 1px rgba(255, 59, 219, 0.5),
     0 0 16px rgba(255, 59, 219, 0.4),
