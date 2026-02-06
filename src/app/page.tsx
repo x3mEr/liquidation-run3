@@ -73,8 +73,10 @@ export default function Home() {
   const [finishPrefetchError, setFinishPrefetchError] = useState<string | null>(
     null
   );
+  const [saveScoreError, setSaveScoreError] = useState<string | null>(null);
   const finishRequestedRef = useRef(false);
   const saveScoreTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const runHadWalletRef = useRef(false);
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const contractAddress = getContractAddress(chainId);
@@ -188,14 +190,16 @@ export default function Home() {
     nextState.dead = false;
     nextState.message = null;
     stateRef.current = nextState;
+    runHadWalletRef.current = Boolean(address);
     setDeathLines([]);
     setPrefetchedFinish(null);
     setFinishPrefetchError(null);
     setFinishPrefetching(false);
+    setSaveScoreError(null);
     finishRequestedRef.current = false;
     updateUi(nextState);
     void startSession();
-  }, [checkInStreakDays, startSession, updateUi]);
+  }, [address, checkInStreakDays, startSession, updateUi]);
 
   const handleDeath = useCallback((state: GameState) => {
     deathCooldownUntilRef.current = Date.now() + 2000;
@@ -462,6 +466,7 @@ export default function Home() {
 
   const handleSaveScore = async () => {
     if (!contractAddress || !walletConnected || !submitScorePrice) return;
+    setSaveScoreError(null);
     if (saveScoreTimeoutRef.current) {
       clearTimeout(saveScoreTimeoutRef.current);
       saveScoreTimeoutRef.current = null;
@@ -476,21 +481,31 @@ export default function Home() {
       let finishData = prefetchedFinish;
       if (!finishData) {
         const token = sessionRef.current;
-        if (!token) return;
+        if (!token) {
+          setSaveScoreError("No session. Start a new run to save score.");
+          return;
+        }
         const response = await fetch("/api/game/finish", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token, player: address, chainId }),
         });
-        if (!response.ok) {
-          return;
-        }
         const data = (await response.json()) as {
+          error?: string;
           timeMs?: number;
           signature?: { v: number; r: `0x${string}`; s: `0x${string}` };
         };
+        if (!response.ok) {
+          setSaveScoreError(
+            typeof data?.error === "string"
+              ? data.error
+              : "Session expired. Start a new run after connecting your wallet to save score."
+          );
+          return;
+        }
 
         if (!data.signature || !data.timeMs) {
+          setSaveScoreError("Could not get signature. Start a new run to save score.");
           return;
         }
         finishData = { timeMs: data.timeMs, signature: data.signature };
@@ -803,6 +818,7 @@ export default function Home() {
                     !onchainEnabled ||
                     !submitScorePrice ||
                     (!sessionToken && !prefetchedFinish) ||
+                    (uiState.dead && !runHadWalletRef.current) ||
                     savingScore ||
                     finishPrefetching
                   }
@@ -816,6 +832,17 @@ export default function Home() {
                 >
                   {savingScore ? "SAVING..." : "SAVE SCORE ON-CHAIN"}
                 </button>
+                {uiState.dead && !runHadWalletRef.current && (
+                  <p className="text-center text-sm text-amber-400/90">
+                    To save score, connect wallet before playing, then start a new run.
+                  </p>
+                )}
+
+                {saveScoreError && (
+                  <p className="mt-2 text-center text-xs text-amber-400/90">
+                    {saveScoreError}
+                  </p>
+                )}
                 <div className="py-3 text-[12px] uppercase tracking-[0.3em] text-zinc-400">
                   Tap to get rekt again
                 </div>
