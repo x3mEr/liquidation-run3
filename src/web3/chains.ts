@@ -52,7 +52,7 @@ export const meageth = (() => {
 
 export const supportedChains = [
   //base,
-  //soneium,
+  soneium,
   somnia,
   //sepolia,
   //meageth,
