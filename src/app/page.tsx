@@ -29,7 +29,11 @@ import {
   useWriteContract,
 } from "wagmi";
 import { liquidationRunAbi } from "@/web3/abi";
+import { somnia } from "@/web3/chains";
 import { getContractAddress } from "@/web3/contracts";
+
+/** Somnia requires a high gas limit; wallet may otherwise send &lt; 21000 and reject the tx. */
+const SOMNIA_GAS_LIMIT = 3_000_000n;
 
 const uiRefreshMs = 90;
 
@@ -451,6 +455,7 @@ export default function Home() {
         abi: liquidationRunAbi,
         functionName: "checkIn",
         value: checkInPrice,
+        ...(chainId === somnia.id && { gas: SOMNIA_GAS_LIMIT }),
       });
       if (hash && publicClient) {
         await publicClient.waitForTransactionReceipt({ hash });
