@@ -33,7 +33,7 @@ import { somnia } from "@/web3/chains";
 import { getContractAddress } from "@/web3/contracts";
 
 /** Somnia requires a high gas limit; wallet may otherwise send &lt; 21000 and reject the tx. */
-const SOMNIA_GAS_LIMIT = 3_000_000n;
+const SOMNIA_GAS_LIMIT = BigInt(3_000_000);
 
 const uiRefreshMs = 90;
 
