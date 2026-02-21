@@ -527,6 +527,7 @@ export default function Home() {
           finishData.signature.s,
         ],
         value: submitScorePrice,
+        ...(chainId === somnia.id && { gas: SOMNIA_GAS_LIMIT }),
       });
       if (hash && publicClient) {
         await publicClient.waitForTransactionReceipt({ hash });
@@ -577,7 +578,7 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button
-              className="glass-panel neon-glow-pink rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#ff3bdb] disabled:opacity-70"
+              className="glass-panel neon-glow-pink rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#ff3bdb] disabled:opacity-70 cursor-pointer disabled:cursor-default"
               disabled={!walletConnected || !onchainEnabled || canCheckIn === false}
               type="button"
               onClick={handleCheckIn}
@@ -817,7 +818,7 @@ export default function Home() {
                   return null;
                 })()} */}
                 <button
-                  className="mt-4 rounded-md border border-[#2df7ff] px-4 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-[#2df7ff] disabled:opacity-40"
+                  className="mt-4 rounded-md border border-[#2df7ff] px-4 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-[#2df7ff] disabled:opacity-40 cursor-pointer disabled:cursor-default"
                   disabled={
                     !walletConnected ||
                     !onchainEnabled ||
