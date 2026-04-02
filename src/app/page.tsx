@@ -792,6 +792,9 @@ export default function Home() {
                 <div className="text-xs uppercase tracking-[0.3em] text-zinc-400">
                   Switch sides. Survive the liquidation wave.
                 </div>
+                <div className="text-[12px] text-center uppercase tracking-[0.1em] text-zinc-400">
+                  <p><span className="text-[14px] font-bold">← →</span> POSITION&nbsp;&nbsp;&nbsp;↑ ↓ LEVERAGE&nbsp;&nbsp;&nbsp;SWIPE ON MOBILE</p>
+                </div>
               </div>
             )}
             {uiState.dead && (
