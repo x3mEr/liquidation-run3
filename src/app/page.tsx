@@ -47,6 +47,8 @@ export default function Home() {
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const sessionRef = useRef<string | null>(null);
   const deathCooldownUntilRef = useRef(0);
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+  const gameOverRef = useRef<HTMLAudioElement | null>(null);
 
   const [uiState, setUiState] = useState<{
     running: boolean;
@@ -65,6 +67,7 @@ export default function Home() {
     elapsedMs: 0,
     message: null as { text: string; type: string } | null,
   });
+  const [muted, setMuted] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [savingScore, setSavingScore] = useState(false);
   const [deathLines, setDeathLines] = useState<string[]>([]);
@@ -149,6 +152,111 @@ export default function Home() {
   const checkInStreakDays = Number(currentStreakRaw ?? 0);
   const bestTimeMs = Number(bestTimeMsRaw ?? 0);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("lr_muted");
+      if (raw === "1") setMuted(true);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("lr_muted", muted ? "1" : "0");
+    } catch {
+      // ignore
+    }
+  }, [muted]);
+
+  useEffect(() => {
+    const canUseDomAudio = typeof window !== "undefined" && typeof Audio !== "undefined";
+    if (!canUseDomAudio) return;
+
+    const pickSource = (
+      audio: HTMLAudioElement,
+      sources: { src: string; mime: string }[]
+    ) => {
+      for (const s of sources) {
+        const ok = audio.canPlayType(s.mime);
+        if (ok === "probably" || ok === "maybe") return s.src;
+      }
+      return sources[0]?.src ?? "";
+    };
+
+    const bgm = new Audio();
+    bgm.src = pickSource(bgm, [
+      { src: "/audio/bgm.ogg", mime: "audio/ogg" },
+      { src: "/audio/bgm.mp3", mime: "audio/mpeg" },
+    ]);
+    bgm.preload = "auto";
+    bgm.loop = true;
+    bgm.volume = 0.35;
+    bgmRef.current = bgm;
+
+    const gameOver = new Audio();
+    gameOver.src = pickSource(gameOver, [
+      { src: "/audio/gameover.ogg", mime: "audio/ogg" },
+      { src: "/audio/gameover.mp3", mime: "audio/mpeg" },
+    ]);
+    gameOver.preload = "auto";
+    gameOver.loop = false;
+    gameOver.volume = 0.85;
+    gameOverRef.current = gameOver;
+
+    return () => {
+      try {
+        bgm.pause();
+        bgm.src = "";
+      } catch {
+        // ignore
+      }
+      try {
+        gameOver.pause();
+        gameOver.src = "";
+      } catch {
+        // ignore
+      }
+      bgmRef.current = null;
+      gameOverRef.current = null;
+    };
+  }, []);
+
+  const stopBgm = useCallback(() => {
+    const bgm = bgmRef.current;
+    if (!bgm) return;
+    try {
+      bgm.pause();
+      bgm.currentTime = 0;
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const tryStartBgm = useCallback(async () => {
+    if (muted) return;
+    const bgm = bgmRef.current;
+    if (!bgm) return;
+    try {
+      if (!bgm.paused) return;
+      await bgm.play();
+    } catch {
+      // Autoplay restrictions or transient failures — ignore and retry on next user action.
+    }
+  }, [muted]);
+
+  const playGameOver = useCallback(() => {
+    if (muted) return;
+    const sfx = gameOverRef.current;
+    if (!sfx) return;
+    try {
+      sfx.currentTime = 0;
+      void sfx.play();
+    } catch {
+      // ignore
+    }
+  }, [muted]);
+
   const updateUi = useCallback((state: GameState) => {
     setUiState({
       running: state.running,
@@ -190,6 +298,7 @@ export default function Home() {
     const size = sizeRef.current;
     if (!size.width || !size.height) return;
 
+    void tryStartBgm();
     const bonus = Math.min(checkInStreakDays * 5, 100);
     const nextState = createInitialState(bonus, nowMs, size);
     nextState.running = true;
@@ -208,7 +317,7 @@ export default function Home() {
     finishRequestedRef.current = false;
     updateUi(nextState);
     void startSession();
-  }, [address, checkInStreakDays, startSession, updateUi]);
+  }, [address, checkInStreakDays, startSession, tryStartBgm, updateUi]);
 
   const openLeaderboard = useCallback(async () => {
     setLeaderboardOpen(true);
@@ -235,6 +344,8 @@ export default function Home() {
 
   const handleDeath = useCallback((state: GameState) => {
     deathCooldownUntilRef.current = Date.now() + 2000;
+    stopBgm();
+    playGameOver();
     const seconds = Math.floor(state.elapsedMs / 1000);
     const timeIndex = Math.min(3, Math.floor(seconds / 15));
     const lines = [
@@ -246,7 +357,20 @@ export default function Home() {
     }
     lines.push(pickRandom(EGO_DEATH_MESSAGES));
     setDeathLines(lines);
-  }, []);
+  }, [playGameOver, stopBgm]);
+
+  useEffect(() => {
+    if (!muted) return;
+    stopBgm();
+    const sfx = gameOverRef.current;
+    if (!sfx) return;
+    try {
+      sfx.pause();
+      sfx.currentTime = 0;
+    } catch {
+      // ignore
+    }
+  }, [muted, stopBgm]);
 
   useLayoutEffect(() => {
     if (!containerRef.current) return;
@@ -315,6 +439,12 @@ export default function Home() {
     rafId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafId);
   }, [deathLines.length, handleDeath, updateUi]);
+
+  useEffect(() => {
+    if (muted) return;
+    if (!uiState.running || uiState.dead) return;
+    void tryStartBgm();
+  }, [muted, tryStartBgm, uiState.dead, uiState.running]);
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -583,6 +713,7 @@ export default function Home() {
             <h1 className="text-2xl font-semibold uppercase tracking-[0.3em] text-[#2df7ff] neon-text-blue">
               LIQUIDATION RUN
             </h1>
+            
             <button
               type="button"
               onClick={() => setInfoOpen(true)}
@@ -607,12 +738,56 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button
-              className="glass-panel neon-glow-pink rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#ff3bdb] disabled:opacity-70 cursor-pointer disabled:cursor-default"
+              className="glass-panel neon-glow-pink flex h-9 items-center justify-center rounded-md px-3 text-sm font-semibold uppercase leading-none tracking-[0.2em] text-[#ff3bdb] disabled:opacity-70 cursor-pointer disabled:cursor-default"
               disabled={!walletConnected || !onchainEnabled || canCheckIn === false}
               type="button"
               onClick={handleCheckIn}
             >
               {canCheckIn === false ? "CHECKED-IN" : "CHECK-IN"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMuted((m) => !m)}
+              className="glass-panel neon-glow-pink flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-zinc-200 transition hover:text-white cursor-pointer"
+              aria-label={muted ? "Unmute" : "Mute"}
+              title={muted ? "Unmute" : "Mute"}
+              data-no-restart
+              onPointerDown={(event) => event.stopPropagation()}
+              onPointerUp={(event) => event.stopPropagation()}
+              onTouchStart={(event) => event.stopPropagation()}
+              onTouchEnd={(event) => event.stopPropagation()}
+            >
+              {muted ? (
+                <svg
+                  aria-hidden
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5 text-[#ff3bdb]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M11 5 6 9H2v6h4l5 4V5z" />
+                  <line x1="22" y1="9" x2="16" y2="15" />
+                  <line x1="16" y1="9" x2="22" y2="15" />
+                </svg>
+              ) : (
+                <svg
+                  aria-hidden
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5 text-[#ff3bdb]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M11 5 6 9H2v6h4l5 4V5z" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                </svg>
+              )}
             </button>
             <ConnectButton.Custom>
               {({
@@ -637,7 +812,7 @@ export default function Home() {
                 return (
                   <div className="flex items-center gap-2">
                     <button
-                      className="glass-panel neon-border flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#2df7ff] hover:text-white cursor-pointer"
+                      className="glass-panel neon-border flex h-9 items-center gap-2 rounded-md px-3 text-xs font-semibold uppercase leading-none tracking-[0.25em] text-[#2df7ff] hover:text-white cursor-pointer"
                       type="button"
                       onClick={openChainModal}
                     >
@@ -656,16 +831,16 @@ export default function Home() {
                       {chain.name}
                     </button>
                     <button
-                      className="glass-panel neon-border flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#2df7ff] hover:text-white cursor-pointer"
+                      className="glass-panel neon-border flex h-9 items-center rounded-md px-2 text-xs font-semibold uppercase leading-none tracking-[0.25em] text-[#2df7ff] hover:text-white cursor-pointer"
                       type="button"
                       onClick={openAccountModal}
                       aria-label="Open wallet account"
                     >
-                      <span className="h-3 w-3 rounded-full bg-[#43ff76] shadow-[0_0_10px_rgba(67,255,118,0.6)]" />
+                      {/* <span className="h-3 w-3 rounded-full bg-[#43ff76] shadow-[0_0_10px_rgba(67,255,118,0.6)]" /> */}
                       <svg
                         aria-hidden="true"
                         viewBox="0 0 24 24"
-                        className="h-4 w-4 text-[#2df7ff]"
+                        className="h-5 w-5 text-[#2df7ff]"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="1.6"
