@@ -2,48 +2,40 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @title LiquidationRunOnchain
-/// @notice Contract for:
-/// - daily check-in (once a day)
-/// - best result storing
 contract LiquidationRunOnchain is Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// @dev player's last check-in day (timestamp / 1 days)
     mapping(address => uint32) public lastCheckInDay;
 
-    /// @dev check-in streak
     mapping(address => uint32) public checkInStreakDays;
-
-    /// @dev best result in ms
     mapping(address => uint32) public bestTimeMs;
+    uint8 public constant LEADERBOARD_SIZE = 10;
 
-    /// @dev signing server address
+    struct LeaderboardEntry {
+        address player;
+        uint32 timeMs;
+    }
+
+    /// @dev sorted descending by timeMs, max LEADERBOARD_SIZE entries
+    LeaderboardEntry[] public leaderboard;
+
     address public signer;
-
-    /// @dev check-in price
-    uint256 public checkInPrice;
-
-    /// @dev score submission price
-    uint256 public submitScorePrice;
-
-    /// @dev collector address
     address public collector;
-
-    /// @dev nonce to prevent replay-attacks
+    uint256 public checkInPrice;
+    uint256 public submitScorePrice;
     mapping(address => uint256) public nonces;
 
     event CheckedIn(address indexed player, uint32 indexed day, uint256 paid);
     event ScoreSubmitted(
         address indexed player,
         uint32 timeMs,
-        bool isNewBest,
-        uint256 paid
+        bool isNewBest
     );
     event ScoreSubmittedByOwner(
         address indexed player,
@@ -52,8 +44,8 @@ contract LiquidationRunOnchain is Ownable, Pausable, ReentrancyGuard {
     );
     event SignerUpdated(address indexed oldSigner, address indexed newSigner);
     event PricesUpdated(uint256 checkInPrice, uint256 submitScorePrice);
-    event checkInPriceUpdated(uint256 oldCheckInPrice, uint256 newCheckInPrice);
-    event submitScorePriceUpdated(uint256 oldSubmitScorePrice, uint256 newSubmitScorePrice);
+    event CheckInPriceUpdated(uint256 oldCheckInPrice, uint256 newCheckInPrice);
+    event SubmitScorePriceUpdated(uint256 oldSubmitScorePrice, uint256 newSubmitScorePrice);
     event CollectorUpdated(address indexed oldCollector, address indexed newCollector);
 
     error AlreadyCheckedInToday();
@@ -86,12 +78,59 @@ contract LiquidationRunOnchain is Ownable, Pausable, ReentrancyGuard {
     }
 
     /// @notice Get current streak
-    /// @param _player Player address (uint32)
     function getCurrentStreak(address _player) external view returns (uint32) {
         if (lastCheckInDay[_player] < today() - 1)
           return 0;
 
         return checkInStreakDays[_player];
+    }
+
+    /// @notice Return the full leaderboard (up to LEADERBOARD_SIZE entries)
+    function getLeaderboard() external view returns (LeaderboardEntry[] memory) {
+        return leaderboard;
+    }
+
+    /// @dev Insert or update player in the leaderboard if timeMs qualifies
+    function _updateLeaderboard(address _player, uint32 _timeMs) internal {
+        uint256 len = leaderboard.length;
+
+        // Check if player already exists
+        for (uint256 i = 0; i < len; i++) {
+            if (leaderboard[i].player == _player) {
+                if (_timeMs <= leaderboard[i].timeMs) return;
+                // Remove old entry by shifting left
+                for (uint256 j = i; j < len - 1; j++) {
+                    leaderboard[j] = leaderboard[j + 1];
+                }
+                leaderboard.pop();
+                len--;
+                break;
+            }
+        }
+
+        // Check if qualifies: board not full OR beats the last entry
+        if (len >= LEADERBOARD_SIZE && _timeMs <= leaderboard[len - 1].timeMs)
+            return;
+
+        // Find insertion index (descending order)
+        uint256 insertAt = len;
+        for (uint256 i = 0; i < len; i++) {
+            if (_timeMs > leaderboard[i].timeMs) {
+                insertAt = i;
+                break;
+            }
+        }
+
+        if (len < LEADERBOARD_SIZE) {
+            leaderboard.push(LeaderboardEntry(address(0), 0));
+            len++;
+        }
+
+        // Shift elements right from the end
+        for (uint256 i = len - 1; i > insertAt; i--)
+            leaderboard[i] = leaderboard[i - 1];
+
+        leaderboard[insertAt] = LeaderboardEntry(_player, _timeMs);
     }
 
     /// @notice Everyday check-in (once a day)
@@ -101,11 +140,10 @@ contract LiquidationRunOnchain is Ownable, Pausable, ReentrancyGuard {
         uint32 day = today();
         if (lastCheckInDay[msg.sender] == day) revert AlreadyCheckedInToday();
 
-        if (lastCheckInDay[msg.sender] == day - 1) {
+        if (lastCheckInDay[msg.sender] == day - 1)
             checkInStreakDays[msg.sender] += 1;
-        } else {
+        else
             checkInStreakDays[msg.sender] = 1;
-        }
 
         lastCheckInDay[msg.sender] = day;
 
@@ -141,14 +179,15 @@ contract LiquidationRunOnchain is Ownable, Pausable, ReentrancyGuard {
 
         uint32 prev = bestTimeMs[msg.sender];
         bool isNewBest = _timeMs > prev;
-        if (isNewBest)
+        if (isNewBest) {
             bestTimeMs[msg.sender] = _timeMs;
-
+            _updateLeaderboard(msg.sender, _timeMs);
+        }
 
         (bool sent, ) = collector.call{value: msg.value}("");
         require(sent, "Transfer failed");
 
-        emit ScoreSubmitted(msg.sender, _timeMs, isNewBest, msg.value);
+        emit ScoreSubmitted(msg.sender, _timeMs, isNewBest);
     }
 
     // ============ ADMIN-FUNCS ============
@@ -175,14 +214,14 @@ contract LiquidationRunOnchain is Ownable, Pausable, ReentrancyGuard {
     function setCheckInPrice(uint256 _newCheckInPrice) external onlyOwner {
         uint256 oldCheckInPrice = checkInPrice;
         checkInPrice = _newCheckInPrice;
-        emit checkInPriceUpdated(oldCheckInPrice, _newCheckInPrice);
+        emit CheckInPriceUpdated(oldCheckInPrice, _newCheckInPrice);
     }
 
     /// @notice Change score submission price
     function setSubmitScorePrice(uint256 _newSubmitScorePrice) external onlyOwner {
         uint256 oldSubmitScorePrice = submitScorePrice;
         submitScorePrice = _newSubmitScorePrice;
-        emit submitScorePriceUpdated(oldSubmitScorePrice, _newSubmitScorePrice);
+        emit SubmitScorePriceUpdated(oldSubmitScorePrice, _newSubmitScorePrice);
     }
 
     /// @notice Change collector
@@ -204,8 +243,10 @@ contract LiquidationRunOnchain is Ownable, Pausable, ReentrancyGuard {
 
         uint32 prev = bestTimeMs[_player];
         bool isNewBest = _timeMs > prev;
-        if (isNewBest)
+        if (isNewBest) {
             bestTimeMs[_player] = _timeMs;
+            _updateLeaderboard(_player, _timeMs);
+        }
 
         emit ScoreSubmittedByOwner(_player, _timeMs, isNewBest);
     }

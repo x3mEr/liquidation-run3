@@ -93,6 +93,28 @@ body {
     0 0 28px rgba(45, 247, 255, 0.2);
 }
 
+/* Cyan + mint dual glow (neon-blue + neon-green) */
+.neon-glow-blue-green {
+  box-shadow:
+    0 0 0 1px rgba(45, 247, 255, 0.45),
+    0 0 0 1px rgba(67, 255, 118, 0.25),
+    0 0 12px rgba(45, 247, 255, 0.35),
+    0 0 22px rgba(67, 255, 118, 0.28),
+    0 0 36px rgba(45, 247, 255, 0.12),
+    0 0 40px rgba(67, 255, 118, 0.1);
+}
+
+/* Cyan + magenta dual glow (neon-blue + neon-pink) */
+.neon-glow-blue-pink {
+  box-shadow:
+    0 0 0 1px rgba(45, 247, 255, 0.45),
+    0 0 0 1px rgba(255, 59, 219, 0.28),
+    0 0 12px rgba(45, 247, 255, 0.35),
+    0 0 22px rgba(255, 59, 219, 0.32),
+    0 0 36px rgba(45, 247, 255, 0.12),
+    0 0 40px rgba(255, 59, 219, 0.14);
+}
+
 .glass-panel {
   background: linear-gradient(180deg, rgba(9, 12, 18, 0.95), rgba(7, 9, 15, 0.7));
   border: 1px solid var(--panel-border);

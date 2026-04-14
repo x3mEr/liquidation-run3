@@ -69,6 +69,11 @@ export default function Home() {
   const [savingScore, setSavingScore] = useState(false);
   const [deathLines, setDeathLines] = useState<string[]>([]);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<
+    { address: string; timeMs: number }[]
+  >([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [prefetchedFinish, setPrefetchedFinish] = useState<{
     timeMs: number;
     signature: { v: number; r: `0x${string}`; s: `0x${string}` };
@@ -204,6 +209,29 @@ export default function Home() {
     updateUi(nextState);
     void startSession();
   }, [address, checkInStreakDays, startSession, updateUi]);
+
+  const openLeaderboard = useCallback(async () => {
+    setLeaderboardOpen(true);
+    if (!contractAddress || !publicClient) return;
+    setLeaderboardLoading(true);
+    try {
+      const entries = await publicClient.readContract({
+        address: contractAddress,
+        abi: liquidationRunAbi,
+        functionName: "getLeaderboard",
+      });
+      setLeaderboard(
+        (entries as readonly { player: string; timeMs: number }[]).map((e) => ({
+          address: e.player,
+          timeMs: Number(e.timeMs),
+        }))
+      );
+    } catch {
+      // silent
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  }, [contractAddress, publicClient]);
 
   const handleDeath = useCallback((state: GameState) => {
     deathCooldownUntilRef.current = Date.now() + 2000;
@@ -558,10 +586,10 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setInfoOpen(true)}
-              className="flex shrink-0 items-center justify-center text-[#2df7ff]"
+              className="flex shrink-0 items-center justify-center text-[#2df7ff] text-xl hover:cursor-pointer"
               aria-label="Game info"
             >
-              <svg
+              {/* <svg
                 aria-hidden
                 viewBox="0 0 24 24"
                 className="h-5 w-5"
@@ -573,7 +601,8 @@ export default function Home() {
               >
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 16v-4M12 8h.01" />
-              </svg>
+              </svg> */}
+              ☰
             </button>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -653,11 +682,23 @@ export default function Home() {
               }}
             </ConnectButton.Custom>
           </div>
-          <div className="text-[11px] text-center uppercase tracking-[0.2em] text-zinc-500">
+          <div className="text-[11px] text-center sm:text-left uppercase tracking-[0.2em] text-zinc-500">
             Each day adds points to initial score
           </div>
         </header>
-
+        <button
+          className="neon-glow-blue-pink group relative cursor-pointer overflow-hidden rounded-md border border-[#2df7ff]/25 bg-gradient-to-b from-zinc-800/45 to-zinc-950/95 px-5 py-2 transition hover:border-[#ff3bdb]/45 hover:brightness-110"
+          type="button"
+          onClick={openLeaderboard}
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#2df7ff]/8 via-transparent to-[#ff3bdb]/10 opacity-80 transition group-hover:opacity-100"
+          />
+          <span className="relative bg-gradient-to-r from-[var(--neon-blue)] via-[#b388ff] to-[var(--neon-pink)] bg-clip-text text-sm font-bold uppercase tracking-[0.22em] text-transparent [text-shadow:none] [filter:drop-shadow(0_0_10px_rgba(45,247,255,0.45))_drop-shadow(0_0_12px_rgba(255,59,219,0.4))]">
+            BEST TRADERS
+          </span>
+        </button>
         {infoOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -686,7 +727,7 @@ export default function Home() {
                 LIQUIDATION RUN
               </h2>
               <p className="mb-4 text-sm leading-relaxed text-zinc-300">
-                Arcade runner: you are a crypto-trader, the price graph runs from right to left. Change your position (long/short) and leverage in sync with the price movement. Points increase when the direction matches your position; decrease when it doesn't. Zero points = liquidation.
+                Arcade runner: you are a crypto-trader, the price graph runs from right to left. Change your position (long/short) and leverage in sync with the price movement. Points increase when the direction matches your position; decrease when it doesn&apos;t. Zero points = liquidation.
               </p>
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
                 Controls
@@ -720,6 +761,81 @@ export default function Home() {
               <p className="mb-4 text-sm leading-relaxed text-zinc-300">
                 <span className="font-semibold text-[#2df7ff]">Save score on-chain</span> — after a run, you can save your survival time. Your best time is stored on-chain and shown in the header; you compete for the longest run.
               </p>
+            </div>
+          </div>
+        )}
+
+        {leaderboardOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lb-title"
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              onClick={() => setLeaderboardOpen(false)}
+              aria-label="Close"
+            />
+            <div className="glass-panel neon-border relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl p-6 text-left shadow-xl">
+              <button
+                type="button"
+                onClick={() => setLeaderboardOpen(false)}
+                className="absolute right-3 top-3 rounded p-1 text-zinc-400 transition hover:bg-white/10 hover:text-zinc-100"
+                aria-label="Close"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <h2 id="lb-title" className="mb-5 text-xl font-semibold uppercase tracking-wider text-[#2df7ff]">
+                BEST TRADERS
+              </h2>
+              {leaderboardLoading ? (
+                <div className="flex items-center justify-center py-10 text-sm uppercase tracking-[0.2em] text-zinc-500">
+                  Loading...
+                </div>
+              ) : leaderboard.length === 0 ? (
+                <div className="flex items-center justify-center py-10 text-sm uppercase tracking-[0.2em] text-zinc-500">
+                  No scores yet
+                </div>
+              ) : (
+                <div className="space-y-0">
+                  {leaderboard.map((entry, i) => {
+                    const secs = Math.floor(entry.timeMs / 1000);
+                    const mins = Math.floor(secs / 60);
+                    const remSecs = secs % 60;
+                    const timeStr = mins > 0 ? `${mins}m ${remSecs}s` : `${secs}s`;
+                    const rankColors = [
+                      "text-[#ffd700]",
+                      "text-[#c0c0c0]",
+                      "text-[#cd7f32]",
+                    ];
+                    const rankColor = rankColors[i] ?? "text-zinc-400";
+                    const shortAddr = `${entry.address.slice(0, 6)}...${entry.address.slice(-4)}`;
+
+                    return (
+                      <div
+                        key={entry.address}
+                        className="flex items-center justify-between border-b border-zinc-800/60 px-1 py-3 last:border-b-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`w-6 text-right text-sm font-bold ${rankColor}`}>
+                            {i + 1}
+                          </span>
+                          <span className="font-mono text-sm text-zinc-200">
+                            {shortAddr}
+                          </span>
+                        </div>
+                        <span className="text-sm font-semibold text-[#43ff76]">
+                          {timeStr}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -793,7 +909,7 @@ export default function Home() {
                   Switch sides. Survive the liquidation wave.
                 </div>
                 <div className="text-[12px] text-center uppercase tracking-[0.1em] text-zinc-400">
-                  <p><span className="text-[14px] font-bold">← →</span> POSITION&nbsp;&nbsp;&nbsp;↑ ↓ LEVERAGE&nbsp;&nbsp;&nbsp;SWIPE ON MOBILE</p>
+                  <p><span className="text-[14px] font-bold">← →</span> POSITION&nbsp;&nbsp;&nbsp;↑ ↓ LEVERAGE&nbsp;&nbsp;&nbsp;OR SWIPE</p>
                 </div>
               </div>
             )}

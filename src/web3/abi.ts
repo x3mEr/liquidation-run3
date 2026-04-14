@@ -67,4 +67,20 @@ export const liquidationRunAbi = [
       inputs: [{ name: "", type: "address" }],
       outputs: [{ name: "", type: "uint256" }],
     },
+    {
+      name: "getLeaderboard",
+      type: "function",
+      stateMutability: "view",
+      inputs: [],
+      outputs: [
+        {
+          name: "",
+          type: "tuple[]",
+          components: [
+            { name: "player", type: "address" },
+            { name: "timeMs", type: "uint32" },
+          ],
+        },
+      ],
+    },
   ] as const;
